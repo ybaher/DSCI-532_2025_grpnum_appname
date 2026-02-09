@@ -1,0 +1,1 @@
+The *Crime in Vancouver* Dashboard is a tool that allows users to explore crime data in Vancouver. It provides a comprehensive view of crime trends, patterns, and locations across the city. The dashboard is designed to help users understand the crime landscape in Vancouver and make informed decisions.
