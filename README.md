@@ -28,10 +28,10 @@ An interactive dashboard to explore crime data in London. Filter by year and cri
    conda activate LondonCrime
    ```
 
-4. **Install Shiny** (if not already in the environment)
+<!-- 4. **Install Shiny** (if not already in the environment)
    ```bash
    pip install shiny
-   ```
+   ``` -->
 
 5. **Run the dashboard**
    ```bash
