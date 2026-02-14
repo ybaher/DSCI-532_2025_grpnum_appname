@@ -24,7 +24,7 @@ Persona:
 
 Usage Need Scenario:
 
--   Eployees working government jobs, specifically those concerned with London's safety could use this dashboard for a quick understanding of crimes rate over the past several years.
+-   Employees working government jobs, specifically those concerned with London's safety could use this dashboard for a quick understanding of crimes rate over the past several years.
 
 -   People moving to London can use this dashboard as a quick understanding of which borough has the highest or lowest crime rate, helping them decide which borough to consider for living.
 
