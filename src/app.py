@@ -154,47 +154,34 @@ app_ui = ui.page_navbar(
                 ),
                 # London-wide summary
                 ui.value_box(
-                    "Total Crimes in London",
+                    "London (All Boroughs)",
                     ui.output_text("year_label_3"),
                     ui.tags.div(
-                        ui.tags.div(ui.output_text("total_crimes"), class_="crime-value"),
-                        ui.tags.span("crimes", style="font-size: 0.8rem; opacity: 0.7;"),
-                    ),
-                ),
-                ui.value_box(
-                    "Average Monthly Crime Rate in London",
-                    ui.output_text("year_label_4"),
-                    ui.tags.div(
-                        ui.tags.div(ui.output_text("crime_rate_london"), class_="crime-value"),
-                        ui.tags.span("crimes per month", style="font-size: 0.8rem; opacity: 0.7;"),
+                        ui.tags.span("Avg Monthly Crime Rate", class_="crime-label"),
+                        ui.tags.div(ui.output_ui("crime_rate_london"), class_="crime-value"),
+                        ui.tags.span("Most Common Crime", class_="crime-label"),
+                        ui.tags.div(ui.output_ui("most_common_crime_london"), class_="crime-value"),
+                        ui.tags.span("Least Common Crime", class_="crime-label"),
+                        ui.tags.div(ui.output_ui("least_common_crime_london"), class_="crime-value"),
                     ),
                 ),
                 fill=False,
             ),
             # Plots — borough comparison
-            ui.layout_columns(
-                ui.card(
-                    output_widget("borough_trend"),
-                    full_screen=True,
+            ui.navset_card_underline(
+                ui.nav_panel(
+                    "By Borough & Type",
+                    ui.card(output_widget("borough_trend"), full_screen=True),
                 ),
-                ui.card(
-                    output_widget("crime_type_counts"),
-                    full_screen=True,
+                ui.nav_panel(
+                    "By Type (Bar)",
+                    ui.card(output_widget("crime_type_counts"), full_screen=True),
                 ),
-                ui.card(
-                    output_widget("crime_type_trend"),
-                    full_screen=True,
+                ui.nav_panel(
+                    "Heatmap: Borough × Month",
+                    ui.card(output_widget("borough_month_heatmap"), full_screen=True),
                 ),
-            ),
-            ui.layout_columns(
-                ui.card(
-                    output_widget("crime_type_month_heatmap"),
-                    full_screen=True,
-                ),
-                ui.card(
-                    output_widget("borough_month_heatmap"),
-                    full_screen=True,
-                ),
+                title="Crime Plots",
             ),
         ),
         # Footer
@@ -210,7 +197,7 @@ app_ui = ui.page_navbar(
                     ui.tags.span(" · ", style="opacity: 0.4;"),
                     ui.tags.a("GitHub Repo", href="https://github.com/UBC-MDS/DSCI-532_2026_16_LondonCrime", target="_blank", style="opacity: 0.7;"),
                     ui.tags.span(" · ", style="opacity: 0.4;"),
-                    ui.tags.span("Last updated: February 26, 2026", style="opacity: 0.7;"),
+                    ui.tags.span("Last updated: March 8, 2026", style="opacity: 0.7;"),
                 ),
                 style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; font-size: 0.8rem;",
             ),
@@ -272,24 +259,24 @@ def server(input, output, session):
     def filtered_data_1():
         """Data filtered to borough_1 selection, selected crime types, and year range."""
         year = data.year.between(input.year_range()[0], input.year_range()[1], inclusive="both")
-        major_category = data.major_category.isin(input.major_category())
+        # major_category = data.major_category.isin(input.major_category())
         borough = data.borough == input.borough_1()
-        return data[borough & major_category & year]
+        return data[borough & year]
 
     @reactive.calc
     def filtered_data_2():
         """Data filtered to borough_2 selection, selected crime types, and year range."""
         year = data.year.between(input.year_range()[0], input.year_range()[1], inclusive="both")
-        major_category = data.major_category.isin(input.major_category())
+        # major_category = data.major_category.isin(input.major_category())
         borough = data.borough == input.borough_2()
-        return data[borough & major_category & year]
+        return data[borough & year]
 
     @reactive.calc
     def filtered_data_london():
         """London-wide data filtered to selected crime types and year range (for summary boxes)."""
         year = data.year.between(input.year_range()[0], input.year_range()[1], inclusive="both")
-        major_category = data.major_category.isin(input.major_category())
-        return data[major_category & year]
+        # major_category = data.major_category.isin(input.major_category())
+        return data[year]
 
     @reactive.calc
     def filtered_data_both():
@@ -347,17 +334,20 @@ def server(input, output, session):
 
     # ── London-wide summary stats ────────────────────────────────────────
 
-    @render.text
-    def total_crimes():
-        df = filtered_data_london()
-        return "No Data" if df.empty else str(len(df))
-
-    @render.text
+    @render.ui
     def crime_rate_london():
         df = filtered_data_london()
-        if df.empty:
-            return "No Data"
-        return calc_crime_rate(df)
+        return ui.tags.span("No Data") if df.empty else ui.tags.span(calc_crime_rate(df))
+
+    @render.ui
+    def most_common_crime_london():
+        df = filtered_data_london()
+        return ui.tags.span("No Data") if df.empty else most_common_crime(df)
+
+    @render.ui
+    def least_common_crime_london():
+        df = filtered_data_london()
+        return ui.tags.span("No Data") if df.empty else least_common_crime(df)
 
     # ── Per-borough stats ────────────────────────────────────────────────
 
@@ -413,25 +403,6 @@ def server(input, output, session):
         return fig
 
     @render_plotly
-    def crime_type_trend():
-        df = filtered_data_both()
-        if df.empty:
-            return px.line(title="No data — select boroughs")
-        df_grouped = df.groupby(["year", "month", "major_category", "borough"]).size().reset_index(name="count")
-        df_grouped["date"] = pd.to_datetime(df_grouped[["year", "month"]].assign(day=1))
-        fig = px.line(
-            df_grouped,
-            x="date",
-            y="count",
-            color="major_category",
-            line_dash="borough",
-            title="Amount of Crime by Type Over Time",
-            labels={"date": "Date", "count": "Number of Crimes", "major_category": "Crime Type"},
-            color_discrete_map=CRIME_COLORS,
-        )
-        return fig
-
-    @render_plotly
     def crime_type_counts():
         df = filtered_data_both()
         if df.empty:
@@ -448,22 +419,7 @@ def server(input, output, session):
             labels={"count": "Number of Crimes", "major_category": "Crime Type"},
             color_discrete_map=CRIME_COLORS,
         )
-        return fig
-
-    @render_plotly
-    def crime_type_month_heatmap():
-        df = filtered_data_both()
-        if df.empty:
-            return px.bar(title="No data — select boroughs")
-        df_grouped = df.groupby(["major_category", "month"]).size().reset_index(name="count")
-        df_pivot = df_grouped.pivot(index="major_category", columns="month", values="count")
-        df_pivot = df_pivot.div(df_pivot.sum(axis=1), axis=0) * 100
-        fig = px.imshow(
-            df_pivot,
-            title="Crime by Type and Month (% of Type Total)",
-            labels={"x": "Month", "y": "Crime Type", "color": "% of Type Total"},
-            color_continuous_scale="Viridis_r",
-        )
+        fig.update_layout(margin=dict(t=80))
         return fig
 
     @render_plotly
