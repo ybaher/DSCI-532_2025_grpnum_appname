@@ -75,11 +75,11 @@ CRIME_COLOR_INDEX = {name: i for i, name in enumerate(CRIME_COLORS.keys())}
 
 app_ui = ui.page_navbar(
     ui.nav_panel(
-        "Crime in London Dashboard",
+        "Dashboard",
         ui.tags.style(f"""
             #total_crimes {{ font-size: 2rem; font-weight: bold; }}
             #crime_rate {{ font-size: 2rem; font-weight: bold; }}
-            #year_label_1, #year_label_2, #year_label_3, #year_label_4 {{ font-size: 0.8rem; opacity: 0.7; }}
+            #year_label_1, #year_label_2, #year_label_3, {{ font-size: 0.8rem; opacity: 0.7; }}
             .bslib-value-box {{ min-height: 120px !important; }}
             .bslib-value-box .value-box-grid {{ padding: 0.5rem !important; }}
             .bslib-card {{ min-height: 500px; }}
@@ -170,15 +170,15 @@ app_ui = ui.page_navbar(
             # Plots — borough comparison
             ui.navset_card_underline(
                 ui.nav_panel(
-                    "By Borough & Type",
+                    "Total Crimes",
                     ui.card(output_widget("borough_trend"), full_screen=True),
                 ),
                 ui.nav_panel(
-                    "By Type (Bar)",
+                    "Crime Type Breakdown",
                     ui.card(output_widget("crime_type_counts"), full_screen=True),
                 ),
                 ui.nav_panel(
-                    "Heatmap: Borough × Month",
+                    "Crime Intensity By Month",
                     ui.card(output_widget("borough_month_heatmap"), full_screen=True),
                 ),
                 title="Crime Plots",
@@ -321,10 +321,6 @@ def server(input, output, session):
         return year_label()
 
     @render.text
-    def year_label_4():
-        return year_label()
-
-    @render.text
     def borough_label_1():
         return input.borough_1()
 
@@ -396,7 +392,7 @@ def server(input, output, session):
             y="count",
             color="major_category",
             barmode="stack",
-            title="Amount of Crime by Borough and Type",
+            title="Amount of Crime by Borough",
             labels={"borough": "Borough", "count": "Number of Crimes", "major_category": "Crime Type"},
             color_discrete_map=CRIME_COLORS,
         )
@@ -432,9 +428,9 @@ def server(input, output, session):
         df_pivot = df_pivot.div(df_pivot.sum(axis=1), axis=0) * 100
         fig = px.imshow(
             df_pivot,
-            title="Crime by Borough and Month (% of Borough Total)",
-            labels={"x": "Month", "y": "Borough", "color": "% of Borough Total"},
-            color_continuous_scale="Viridis_r",
+            title="Monthly Crime Breakdown by Borough (% of Total Yearly Commited In Given Month)",
+            labels={"x": "Month", "y": "Borough", "color": "% of Yearly Crime"},
+            color_continuous_scale="Viridis",
             aspect="auto",
         )
         return fig
